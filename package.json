@@ -2,14 +2,24 @@
   "name": "hydroflow-dashboard",
   "version": "1.0.0",
   "description": "Athlete Hydration Dashboard with Supabase Auth integration",
-  "main": "dashboard.js",
   "type": "module",
   "scripts": {
-    "dev": "npx serve .",
-    "start": "node dashboard.js"
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.39.0",
-    "serve": "^14.2.0"
+    "@tailwindcss/postcss": "^4.2.3",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "autoprefixer": "^10.5.0",
+    "next": "^16.2.4",
+    "postcss": "^8.5.10",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tailwindcss": "^4.2.3",
+    "typescript": "^6.0.3"
   }
 }
