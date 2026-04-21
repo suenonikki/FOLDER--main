@@ -5,9 +5,11 @@
   "main": "dashboard.js",
   "type": "module",
   "scripts": {
+    "dev": "npx serve .",
     "start": "node dashboard.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "serve": "^14.2.0"
   }
 }
