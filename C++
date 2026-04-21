@@ -1,0 +1,89 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
+
+// --- WiFi Configuration ---
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+const char* serverUrl = "172.20.208.26";
+
+// --- DHT11 Setup ---
+#define DHTPIN 4
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// --- Pulse Sensor & BPM ---
+const int pulsePin = 34;
+unsigned long lastBeatTime = 0;
+int bpm = 0;
+const int numBeats = 5;
+int beatIntervals[numBeats];
+int beatIndex = 0;
+
+// Timer for sending data (don't spam the server every 250ms)
+unsigned long lastUploadTime = 0;
+const unsigned long uploadInterval = 5000; // Send data every 5 seconds
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected!");
+}
+
+void loop() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  int pulseSignal = analogRead(pulsePin);
+
+  // Heart Rate Logic
+  if (pulseSignal > 2500) {
+    unsigned long currentTime = millis();
+    unsigned long interval = currentTime - lastBeatTime;
+    if (interval > 300) {
+      beatIntervals[beatIndex] = interval;
+      beatIndex = (beatIndex + 1) % numBeats;
+      lastBeatTime = currentTime;
+      long sum = 0;
+      for (int i = 0; i < numBeats; i++) sum += beatIntervals[i];
+      bpm = 60000 / (sum / numBeats);
+    }
+  }
+
+  // Send to HydroFlow Server
+  if (millis() - lastUploadTime > uploadInterval) {
+    if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(serverUrl);
+      http.addHeader("Content-Type", "application/json");
+
+      // Construct JSON payload
+      String jsonPayload = "{\"bpm\":" + String(bpm) + 
+                           ",\"temp\":" + String(t) + 
+                           ",\"humidity\":" + String(h) + "}";
+
+      int httpResponseCode = http.POST(jsonPayload);
+      
+      if (httpResponseCode > 0) {
+        Serial.print("Data sent! Response: ");
+        Serial.println(httpResponseCode);
+      } else {
+        Serial.print("Error sending POST: ");
+        Serial.println(httpResponseCode);
+      }
+      http.end();
+    }
+    lastUploadTime = millis();
+  }
+
+  delay(20); // Faster polling for better beat detection
+}
